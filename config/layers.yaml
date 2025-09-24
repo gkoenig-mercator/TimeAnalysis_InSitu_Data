@@ -1,0 +1,7 @@
+layers:
+  - name: surface
+    depth: [0, 50]
+  - name: thermocline
+    depth: [50, 200]
+  - name: deep
+    depth: [200, 1000]
