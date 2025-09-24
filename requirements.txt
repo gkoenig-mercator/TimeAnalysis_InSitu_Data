@@ -1,0 +1,14 @@
+# Core scientific libraries
+numpy>=1.25
+pandas>=2.1
+xarray>=2025.09
+netCDF4>=1.6
+dask>=2025.09         # optional, only if you use lazy loading for large files
+
+# Plotting
+matplotlib>=3.7
+cartopy>=0.24          # for maps, optional if you want station maps
+seaborn>=0.12          # optional, for nicer style
+
+# Utilities (optional)
+tqdm>=4.70             # for progress bars
