@@ -30,8 +30,9 @@ def load_single_file(file_path: str, variable: str) -> xr.Dataset:
         print(f"Skipping {file_path} (no {variable})")
         return None
 
-    # Keep only the variable, drop extra coordinates for simplicity
+
     ds = ds[[variable]].reset_coords(drop=True)
+
 
     return ds
 

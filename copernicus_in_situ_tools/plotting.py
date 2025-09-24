@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from typing import List, Dict, Tuple, Optional
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 class StationPlotter:
     """
@@ -133,34 +135,176 @@ class StationPlotter:
         plt.tight_layout()
         return fig, axs
 
-def plot_station_map(station_data, variable="TEMP"):
+class ProfilePlotter:
     """
-    Plot a world map with one point per station.
-    Marker size is proportional to number of measurements.
-
-    Args:
-        station_data (list of xr.Dataset]): List of station datasets.
-        variable (str): Variable to count measurements for.
-
-    Returns:
-        matplotlib.figure.Figure
+    Class to plot time-averaged vertical profiles per station
+    with spaghetti lines and mean ± std, reusing the StationPlotter style architecture.
     """
-    lats, lons, sizes = [], [], []
-    for ds in station_data:
-        if "LATITUDE" not in ds or "LONGITUDE" not in ds:
-            continue
-        lat = float(ds["LATITUDE"].values)
-        lon = float(ds["LONGITUDE"].values)
-        n_obs = ds[variable].count().item() if variable in ds else 1
 
-        lats.append(lat)
-        lons.append(lon)
-        sizes.append(n_obs)
+    def __init__(self, profiles: xr.DataArray, variable="TEMP", style=None):
+        """
+        Args:
+            profiles: xr.DataArray (station, DEPTH)
+            variable: str, variable name for labeling
+            style: dict with optional keys:
+                color_spaghetti, alpha, lw_station, color_mean, lw_mean, max_stations
+        """
+        self.profiles = profiles
+        self.variable = variable
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sc = ax.scatter(lons, lats, s=np.array(sizes) / 50, c="tab:blue", alpha=0.6, edgecolors="k")
-    ax.set_title("Station distribution")
-    ax.set_xlabel("Longitude")
-    ax.set_ylabel("Latitude")
-    return fig
+        # Default style
+        default_style = dict(
+            color_spaghetti="tab:blue",
+            alpha=0.3,
+            lw_station=1.0,
+            color_mean="tab:red",
+            lw_mean=2.5,
+            max_stations=50,
+        )
+        self.style = default_style if style is None else {**default_style, **style}
+
+    # ------------------ Helper methods ------------------
+
+    def _select_stations(self):
+        """Randomly select a subset of stations if too many"""
+        n_stations = self.profiles.sizes["station"]
+        max_s = self.style.get("max_stations", 50)
+        if n_stations > max_s:
+            return np.random.choice(n_stations, max_s, replace=False)
+        return np.arange(n_stations)
+
+    def _compute_statistics(self):
+        """Compute mean and std profiles"""
+        mean_profile = self.profiles.mean(dim="station", skipna=True)
+        std_profile = self.profiles.std(dim="station", skipna=True)
+        return mean_profile, std_profile
+
+    def _plot_spaghetti(self, ax, stations_idx):
+        """Plot individual station profiles"""
+        for i in stations_idx:
+            ax.plot(
+                self.profiles.isel(station=i),
+                self.profiles["DEPTH"],
+                color=self.style["color_spaghetti"],
+                alpha=self.style["alpha"],
+                lw=self.style["lw_station"],
+            )
+
+    def _plot_mean_std(self, ax, mean_profile, std_profile):
+        """Plot mean ± std shaded area"""
+        ax.plot(
+            mean_profile,
+            self.profiles["DEPTH"],
+            color=self.style["color_mean"],
+            lw=self.style["lw_mean"],
+            label="Mean profile",
+        )
+        ax.fill_betweenx(
+            self.profiles["DEPTH"],
+            mean_profile - std_profile,
+            mean_profile + std_profile,
+            color=self.style["color_mean"],
+            alpha=0.2,
+            label="Std dev",
+        )
+
+    # ------------------ Public method ------------------
+
+    def plot(self):
+        """Generate the spaghetti + mean ± std profile plot"""
+        fig, ax = plt.subplots(figsize=(8, 6))
+        stations_idx = self._select_stations()
+        self._plot_spaghetti(ax, stations_idx)
+        mean_profile, std_profile = self._compute_statistics()
+        self._plot_mean_std(ax, mean_profile, std_profile)
+
+        ax.invert_yaxis()
+        ax.set_xlabel(self.variable)
+        ax.set_ylabel("Depth (m)")
+        ax.set_title(f"Time-averaged vertical profiles ({self.variable})")
+        ax.legend()
+        plt.tight_layout()
+        return fig, ax
+
+
+class StationMapPlotter:
+    """
+    Plot station locations on a world map with marker size proportional
+    to the number of measurements.
+    """
+
+    def __init__(self, station_data, variable="TEMP", style=None):
+        """
+        Args:
+            station_data: list of xr.Dataset
+            variable: str, used to count number of observations per station
+            style: dict with optional keys:
+                color: marker color
+                alpha: transparency
+                max_marker_size: max point size
+                figsize: figure size
+        """
+        self.station_data = station_data
+        self.variable = variable
+
+        # Default style
+        default_style = dict(
+            color="tab:blue",
+            alpha=0.6,
+            max_marker_size=200,
+            figsize=(12, 6),
+        )
+        self.style = default_style if style is None else {**default_style, **style}
+
+    # ------------------ Helper methods ------------------
+
+    def _extract_coords_and_sizes(self):
+        """
+        Extract latitude, longitude, and marker size for each station
+        """
+        lats, lons, sizes = [], [], []
+        for ds in self.station_data:
+            if "LATITUDE" not in ds or "LONGITUDE" not in ds:
+                print("Not present")
+                continue
+            lat = float(ds["LATITUDE"].values)
+            lon = float(ds["LONGITUDE"].values)
+
+            if self.variable in ds:
+                n_obs = ds[self.variable].count().item()
+            else:
+                n_obs = 1
+            # scale marker size
+            sizes.append(min(n_obs, self.style["max_marker_size"]))
+            lats.append(lat)
+            lons.append(lon)
+        return lons, lats, sizes
+
+    # ------------------ Public method ------------------
+
+    def plot(self):
+        """
+        Plot the stations on a Cartopy map.
+        Returns: fig, ax
+        """
+        fig = plt.figure(figsize=self.style.get("figsize", (12, 6)))
+        ax = plt.axes(projection=ccrs.PlateCarree())
+        ax.add_feature(cfeature.LAND, facecolor="lightgray")
+        ax.add_feature(cfeature.COASTLINE)
+        ax.add_feature(cfeature.BORDERS, linestyle=":")
+        ax.gridlines(draw_labels=True)
+
+        lons, lats, sizes = self._extract_coords_and_sizes()
+        scatter = ax.scatter(
+            lons,
+            lats,
+            s=sizes,
+            color=self.style.get("color", "tab:blue"),
+            alpha=self.style.get("alpha", 0.6),
+            edgecolors="k",
+            transform=ccrs.PlateCarree(),
+        )
+
+        ax.set_title("Station Distribution")
+        return fig, ax
 
