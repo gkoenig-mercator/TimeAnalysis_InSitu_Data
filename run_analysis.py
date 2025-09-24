@@ -10,19 +10,19 @@ from copernicus_in_situ_tools.plotting import plot_spaghetti, plot_global_averag
 
 # -------------------- Configuration --------------------
 
-DATA_DIR = "INSITU_IBI_PHYBGCWAV_DISCRETE_MYNRT_013_033/cmems_obs-ins_ibi_phybgcwav_mynrt_na_irr_202311/history/XX/"  # path to your NetCDF files
+DATA_DIR = "/homelocal/gkoenig/datatests/INSITU_IBI_PHYBGCWAV_DISCRETE_MYNRT_013_033/cmems_obs-ins_ibi_phybgcwav_mynrt_na_irr_202311/history/XX/"  # path to your NetCDF files
 VARIABLE = "TEMP"   # variable to analyze, e.g., TEMP, SAL
 MAX_STATIONS_TO_PLOT = 50
 TIME_DOWNSAMPLE = 1
 
 # Load layer definitions from YAML
-with open("copernicus_in_situ_tools/config/layers.yaml") as f:
+with open("config/layers.yaml") as f:
     layers_config = yaml.safe_load(f)
 LAYERS = layers_config["layers"]
 
 # -------------------- Step 1: Load Data --------------------
 
-station_data = load_station_directory(DATA_DIR, variables=[VARIABLE])
+station_data = load_station_directory(DATA_DIR, variable=VARIABLE)
 
 if not station_data:
     print("No station data loaded. Exiting.")
