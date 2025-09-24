@@ -65,7 +65,7 @@ class _StationProcessor:
 
 # -------------------- High-level user function --------------------
 
-def process_station_data(station_data: List[xr.Dataset], variable: str, layers: Dict[str, Tuple[float, float]]) -> Dict[str, xr.Dataset]:
+def compute_layer_statistics_across_stations(station_data: List[xr.Dataset], variable: str, layers: Dict[str, Tuple[float, float]]) -> Dict[str, xr.Dataset]:
     """
     User-friendly function to process station datasets.
 
@@ -92,3 +92,27 @@ def process_station_data(station_data: List[xr.Dataset], variable: str, layers: 
     processor.load_station_data(station_data)
     processor.compute_layers()
     return processor.compute_statistics()
+
+from typing import List, Dict, Tuple
+import xarray as xr
+
+def compute_layer_averages_per_station(station_data: List[xr.Dataset], variable: str, layers: Dict[str, Tuple[float, float]]) -> List[xr.Dataset]:
+    """
+    Compute the layer averages for each station (per-station data).
+
+    Parameters
+    ----------
+    station_data : list of xr.Dataset
+        Raw station datasets.
+    variable : str
+        Variable to process (e.g., "TEMP").
+    layers : dict
+        Dictionary of layer_name -> (min_depth, max_depth)
+
+    Returns
+    -------
+    List[xr.Dataset]
+        List of datasets, one per station, containing the averaged layers.
+    """
+    return [compute_station_layer_averages(ds, variable, layers) for ds in station_data]
+

@@ -5,7 +5,7 @@ Main script to process Copernicus in-situ data and plot results.
 
 import yaml
 from copernicus_in_situ_tools.io import load_station_directory
-from copernicus_in_situ_tools.processing import compute_layer_averages, compute_global_average
+from copernicus_in_situ_tools.processing import compute_layer_averages_per_station, compute_layer_statistics_across_stations
 from copernicus_in_situ_tools.plotting import plot_spaghetti, plot_global_average
 
 # -------------------- Configuration --------------------
@@ -30,11 +30,12 @@ if not station_data:
 
 # -------------------- Step 2: Compute Layer Averages --------------------
 
-station_data = compute_layer_averages(station_data, layers=LAYERS, variable=VARIABLE)
+# Per-station layer averages for spaghetti plots
+station_layers = compute_layer_averages_per_station(station_data, variable=VARIABLE, layers=LAYERS)
 
 # -------------------- Step 3: Compute Global Averages --------------------
 
-global_ds = compute_global_average(station_data, variable=VARIABLE)
+stats = compute_layer_statistics_across_stations(station_data, variable=VARIABLE, layers=LAYERS)
 
 # -------------------- Step 4: Plot --------------------
 
