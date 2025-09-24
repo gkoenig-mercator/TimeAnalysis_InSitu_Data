@@ -16,7 +16,7 @@ MAX_STATIONS_TO_PLOT = 50
 TIME_DOWNSAMPLE = 1
 
 # Load layer definitions from YAML
-with open("copernicus_insitu_tool/config/layers.yaml") as f:
+with open("copernicus_in_situ_tools/config/layers.yaml") as f:
     layers_config = yaml.safe_load(f)
 LAYERS = layers_config["layers"]
 
