@@ -10,56 +10,55 @@ from copernicus_in_situ_tools.processing import (
     compute_layer_statistics_across_stations
 )
 from copernicus_in_situ_tools.plotting import StationPlotter
+from copernicus_in_situ_tools.ui import print_banner, parse_arguments
 import matplotlib.pyplot as plt
-# -------------------- Configuration --------------------
-VARIABLE = "TEMP"
 
-# Load layers from YAML (dictionary format)
-with open("config/layers.yaml") as f:
-    layers_config = yaml.safe_load(f)
-LAYERS = layers_config["layers"]  # e.g., {"surface": [0,50], "thermocline": [50,200], "deep": [200,1000]}
+def main():
+    # -------------------- Banner + CLI --------------------
+    print_banner()
+    args = parse_arguments()
 
-# Optional plotting styles
-STYLE = {
-    "colors": {"surface": "tab:blue", "thermocline": "tab:orange", "deep": "tab:green"},
-    "alpha": 0.3,
-    "lw_station": 1.0,
-    "lw_mean": 2.5,
-    "max_stations": 50,
-    "time_downsample": 5,
-    "figsize": (12, 8)
-}
+    # Load layers from YAML (dictionary format)
+    with open("config/layers.yaml") as f:
+        layers_config = yaml.safe_load(f)
+    LAYERS = layers_config["layers"]  # e.g., {"surface": [0,50], "thermocline": [50,200], "deep": [200,1000]}
 
-# -------------------- Load Station Data --------------------
-station_data_dir = "/homelocal/gkoenig/datatests/INSITU_IBI_PHYBGCWAV_DISCRETE_MYNRT_013_033/cmems_obs-ins_ibi_phybgcwav_mynrt_na_irr_202311/history/XX/"
-station_data = load_station_directory(station_data_dir, variable=VARIABLE)
+    with open("config/style.yaml") as f:
+        style_config = yaml.safe_load(f)
+    STYLE = style_config["style"]
 
-# -------------------- Compute Per-Station Layer Averages --------------------
-station_layers = compute_layer_averages_per_station(
-    station_data, variable=VARIABLE, layers=LAYERS
-)
+    # -------------------- Load Station Data --------------------
+    station_data = load_station_directory(args.data_dir, variable=args.variable)
 
-# -------------------- Compute Aggregated Statistics --------------------
-stats = compute_layer_statistics_across_stations(
-    station_data, variable=VARIABLE, layers=LAYERS
-)
+    # -------------------- Compute Per-Station Layer Averages --------------------
+    station_layers = compute_layer_averages_per_station(
+        station_data, variable=args.variable, layers=LAYERS
+    )
 
-# -------------------- Plot --------------------
-plotter = StationPlotter(
-    station_layers=station_layers,
-    stats=stats,
-    layers=LAYERS,
-    variable=VARIABLE,
-    style=STYLE
-)
+    # -------------------- Compute Aggregated Statistics --------------------
+    stats = compute_layer_statistics_across_stations(
+        station_data, variable=args.variable, layers=LAYERS
+    )
 
-# 1️⃣ Spaghetti plot for a single layer
-plotter.plot_spaghetti_for_layer("surface")
+    # -------------------- Plot --------------------
+    plotter = StationPlotter(
+        station_layers=station_layers,
+        stats=stats,
+        layers=LAYERS,
+        variable=args.variable,
+        style=STYLE
+    )
 
-# 2️⃣ Mean ± std plot for a single layer
-plotter.plot_mean_std_for_layer("surface")
+    # 1️⃣ Spaghetti plot for a single layer
+    plotter.plot_spaghetti_for_layer("surface")
 
-# 3️⃣ Combined figure for all layers
-fig, axs = plotter.plot_all_layers()
+    # 2️⃣ Mean ± std plot for a single layer
+    plotter.plot_mean_std_for_layer("surface")
 
-plt.show()
+    # 3️⃣ Combined figure for all layers
+    fig, axs = plotter.plot_all_layers()
+
+    plt.show()
+
+if __name__ == "__main__":
+    main()
