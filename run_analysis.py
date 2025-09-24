@@ -5,42 +5,61 @@ Main script to process Copernicus in-situ data and plot results.
 
 import yaml
 from copernicus_in_situ_tools.io import load_station_directory
-from copernicus_in_situ_tools.processing import compute_layer_averages_per_station, compute_layer_statistics_across_stations
-from copernicus_in_situ_tools.plotting import plot_spaghetti, plot_global_average
-
+from copernicus_in_situ_tools.processing import (
+    compute_layer_averages_per_station,
+    compute_layer_statistics_across_stations
+)
+from copernicus_in_situ_tools.plotting import StationPlotter
+import matplotlib.pyplot as plt
 # -------------------- Configuration --------------------
+VARIABLE = "TEMP"
 
-DATA_DIR = "/homelocal/gkoenig/datatests/INSITU_IBI_PHYBGCWAV_DISCRETE_MYNRT_013_033/cmems_obs-ins_ibi_phybgcwav_mynrt_na_irr_202311/history/XX/"  # path to your NetCDF files
-VARIABLE = "TEMP"   # variable to analyze, e.g., TEMP, SAL
-MAX_STATIONS_TO_PLOT = 50
-TIME_DOWNSAMPLE = 1
-
-# Load layer definitions from YAML
+# Load layers from YAML (dictionary format)
 with open("config/layers.yaml") as f:
     layers_config = yaml.safe_load(f)
-LAYERS = layers_config["layers"]
+LAYERS = layers_config["layers"]  # e.g., {"surface": [0,50], "thermocline": [50,200], "deep": [200,1000]}
 
-# -------------------- Step 1: Load Data --------------------
+# Optional plotting styles
+STYLE = {
+    "colors": {"surface": "tab:blue", "thermocline": "tab:orange", "deep": "tab:green"},
+    "alpha": 0.3,
+    "lw_station": 1.0,
+    "lw_mean": 2.5,
+    "max_stations": 50,
+    "time_downsample": 5,
+    "figsize": (12, 8)
+}
 
-station_data = load_station_directory(DATA_DIR, variable=VARIABLE)
+# -------------------- Load Station Data --------------------
+station_data_dir = "/homelocal/gkoenig/datatests/INSITU_IBI_PHYBGCWAV_DISCRETE_MYNRT_013_033/cmems_obs-ins_ibi_phybgcwav_mynrt_na_irr_202311/history/XX/"
+station_data = load_station_directory(station_data_dir, variable=VARIABLE)
 
-if not station_data:
-    print("No station data loaded. Exiting.")
-    exit()
+# -------------------- Compute Per-Station Layer Averages --------------------
+station_layers = compute_layer_averages_per_station(
+    station_data, variable=VARIABLE, layers=LAYERS
+)
 
-# -------------------- Step 2: Compute Layer Averages --------------------
+# -------------------- Compute Aggregated Statistics --------------------
+stats = compute_layer_statistics_across_stations(
+    station_data, variable=VARIABLE, layers=LAYERS
+)
 
-# Per-station layer averages for spaghetti plots
-station_layers = compute_layer_averages_per_station(station_data, variable=VARIABLE, layers=LAYERS)
+# -------------------- Plot --------------------
+plotter = StationPlotter(
+    station_layers=station_layers,
+    stats=stats,
+    layers=LAYERS,
+    variable=VARIABLE,
+    style=STYLE
+)
 
-# -------------------- Step 3: Compute Global Averages --------------------
+# 1️⃣ Spaghetti plot for a single layer
+plotter.plot_spaghetti_for_layer("surface")
 
-stats = compute_layer_statistics_across_stations(station_data, variable=VARIABLE, layers=LAYERS)
+# 2️⃣ Mean ± std plot for a single layer
+plotter.plot_mean_std_for_layer("surface")
 
-# -------------------- Step 4: Plot --------------------
+# 3️⃣ Combined figure for all layers
+fig, axs = plotter.plot_all_layers()
 
-# Spaghetti plot per station
-plot_spaghetti(station_data, variable=VARIABLE, max_stations=MAX_STATIONS_TO_PLOT, time_downsample=TIME_DOWNSAMPLE)
-
-# Global average ± std
-plot_global_average(global_ds, variable=VARIABLE)
+plt.show()
