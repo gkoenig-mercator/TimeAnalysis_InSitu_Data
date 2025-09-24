@@ -132,3 +132,35 @@ class StationPlotter:
             ax.set_xlabel("TIME")
         plt.tight_layout()
         return fig, axs
+
+def plot_station_map(station_data, variable="TEMP"):
+    """
+    Plot a world map with one point per station.
+    Marker size is proportional to number of measurements.
+
+    Args:
+        station_data (list of xr.Dataset]): List of station datasets.
+        variable (str): Variable to count measurements for.
+
+    Returns:
+        matplotlib.figure.Figure
+    """
+    lats, lons, sizes = [], [], []
+    for ds in station_data:
+        if "LATITUDE" not in ds or "LONGITUDE" not in ds:
+            continue
+        lat = float(ds["LATITUDE"].values)
+        lon = float(ds["LONGITUDE"].values)
+        n_obs = ds[variable].count().item() if variable in ds else 1
+
+        lats.append(lat)
+        lons.append(lon)
+        sizes.append(n_obs)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sc = ax.scatter(lons, lats, s=np.array(sizes) / 50, c="tab:blue", alpha=0.6, edgecolors="k")
+    ax.set_title("Station distribution")
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    return fig
+

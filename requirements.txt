@@ -4,6 +4,9 @@ pandas>=2.1
 xarray>=2025.09
 netCDF4>=1.6
 dask>=2025.09         # optional, only if you use lazy loading for large files
+pyfiglet>1.02
+colorama>0.4
+scipy>1.16
 
 # Plotting
 matplotlib>=3.7

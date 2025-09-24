@@ -7,9 +7,10 @@ import yaml
 from copernicus_in_situ_tools.io import load_station_directory
 from copernicus_in_situ_tools.processing import (
     compute_layer_averages_per_station,
-    compute_layer_statistics_across_stations
+    compute_layer_statistics_across_stations,
+    compute_time_averaged_profiles
 )
-from copernicus_in_situ_tools.plotting import StationPlotter
+from copernicus_in_situ_tools.plotting import StationPlotter, plot_station_map
 from copernicus_in_situ_tools.ui import print_banner, parse_arguments
 import matplotlib.pyplot as plt
 
@@ -57,6 +58,11 @@ def main():
 
     # 3️⃣ Combined figure for all layers
     fig, axs = plotter.plot_all_layers()
+
+    # World matplotlib
+    profiles = compute_time_averaged_profiles(station_data, variable=args.variable)
+
+    fig_map = plot_station_map(station_data, variable=args.variable)
 
     plt.show()
 
