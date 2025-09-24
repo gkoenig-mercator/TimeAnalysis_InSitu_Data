@@ -1,0 +1,40 @@
+# Copernicus In-Situ Data Analysis Tool
+
+A Python package to process, analyze, and visualize in-situ observational data from **Copernicus Marine Environment Monitoring Service (CMEMS)**.
+It provides tools to handle multiple stations, compute depth averages, generate per-station and global time series, and create customizable plots for variables like **temperature** and **salinity**.
+
+---
+
+## Features
+
+- Load and preprocess multiple NetCDF files
+- Handle missing variables and duplicate time entries
+- Compute depth-averaged statistics for surface and deep layers
+- Generate:
+  - Spaghetti plots (per-station time series)
+  - Global average time series with variability (mean ± standard deviation)
+  - Station maps showing measurement density
+  - Vertical profile plots
+- Configurable plotting styles and depth ranges
+- Flexible variable selection (`TEMP`, `SAL`, etc.)
+- Memory-efficient handling of large datasets
+
+---
+
+## Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/copernicus_insitu_tool.git
+cd copernicus_insitu_tool
+
+# Optional: create a virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+venv\Scripts\activate     # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Optional: install as a package
+pip install -e .
